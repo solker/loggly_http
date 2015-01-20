@@ -169,6 +169,33 @@ function loggly_http_watchdog(array $log_entry) {
     $event['uuid'] = $uuid;
   }
 
+  // Remove empty values, to prevent errors in the indexing of the JSON.
+  $event = loggly_http_array_remove_empty($event);
+
   loggly_http_register_event($event);
+}
+
+/**
+ * Deep array filter.
+ *
+ * Remove empty values.
+ *
+ * @param $haystack
+ *   The variable to filter.
+ *
+ * @return mixed
+ */
+function loggly_http_array_remove_empty($haystack) {
+  foreach ($haystack as $key => $value) {
+    if (is_array($value)) {
+      $haystack[$key] = loggly_http_array_remove_empty($haystack[$key]);
+    }
+
+    if (empty($haystack[$key])) {
+      unset($haystack[$key]);
+    }
+  }
+
+  return $haystack;
 }
 

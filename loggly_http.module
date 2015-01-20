@@ -78,7 +78,10 @@ function _loggly_http_exception_handler($exception) {
  */
 function _loggly_http_decode_exception($exception) {
   $return = _drupal_decode_exception($exception);
-  $return['exception_trace'] = $exception->getTrace();
+
+  // We have to serialize the array here to prevent a notice. We will
+  // unserialize it in loggly_http_watchdog().
+  $return['exception_trace'] = serialize($exception->getTrace());
   return $return;
 
 }
@@ -158,7 +161,11 @@ function loggly_http_watchdog(array $log_entry) {
   );
 
   if (!empty($log_entry['variables']['exception_trace'])) {
-    $event['exception_trace'] = $log_entry['exception_trace'];
+    $event['exception_trace'] = unserialize($log_entry['variables']['exception_trace']);
+  }
+
+  if ($uuid = variable_get('loggly_http_uuid')) {
+    $event['uuid'] = $uuid;
   }
 
   loggly_http_register_event($event);

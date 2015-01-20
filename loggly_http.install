@@ -42,4 +42,5 @@ function loggly_http_uninstall() {
   variable_del('loggly_http_url');
   variable_del('loggly_http_enabled');
   variable_del('loggly_severity_level');
+  variable_del('loggly_http_uuid');
 }

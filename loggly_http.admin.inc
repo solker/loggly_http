@@ -9,6 +9,13 @@
  * Loggly HTTP POST API Configuration Form.
  */
 function loggly_http_admin_settings($form, &$form_state) {
+  $form['loggly_http_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Loggly HTTP API'),
+    '#description' => t('Enable Loggly HTTP POST'),
+    '#default_value' => variable_get('loggly_http_enabled', TRUE),
+  );
+
   $form['loggly_http_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Endpoint'),
@@ -35,11 +42,11 @@ function loggly_http_admin_settings($form, &$form_state) {
     '#description' => t('The minimum severity level to be reached before an event is pushed to Loggly.'),
   );
 
-  $form['loggly_http_enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Loggly HTTP API'),
-    '#description' => t('Enable Loggly HTTP POST'),
-    '#default_value' => variable_get('loggly_http_enabled'),
+  $form['loggly_http_uuid'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Unique ID'),
+    '#description' => t('An arbitrary ID that will identify the environment.'),
+    '#default_value' => variable_get('loggly_http_uuid'),
   );
 
   return system_settings_form($form);

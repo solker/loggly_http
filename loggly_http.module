@@ -109,9 +109,22 @@ function loggly_http_shutdown() {
   }
 }
 
+/**
+ * Register an event in a static cache.
+ *
+ * To prevent multiple registration of the same error, we check that identical
+ * events are not captured twice, thus reducing the final HTTP requests needed.
+ *
+ * @param array $event
+ */
 function loggly_http_register_event(array $event = array()) {
   $events = &drupal_static('loggly_http_events', array());
-  $events[] = $event;
+
+  // Prevent identical events.
+  $event_key = $event;
+  unset($event_key['timestamp']);
+  $key = md5(serialize($event_key));
+  $events[$key] = $event;
 }
 
 function loggly_http_get_registered_events() {

@@ -79,8 +79,7 @@ function _loggly_http_exception_handler($exception) {
 function _loggly_http_decode_exception($exception) {
   $return = _drupal_decode_exception($exception);
 
-  // We have to serialize the array here to prevent a notice. We will
-  // unserialize it in loggly_http_watchdog().
+  // We have to serialize the array here to prevent a notice.
   $return['exception_trace'] = serialize($exception->getTrace());
   return $return;
 
@@ -161,7 +160,9 @@ function loggly_http_watchdog(array $log_entry) {
   );
 
   if (!empty($log_entry['variables']['exception_trace'])) {
-    $event['exception_trace'] = unserialize($log_entry['variables']['exception_trace']);
+    // @todo: We avoid unserializing as it seems to causes Loggly to fail
+    // to index event as JSON.
+    $event['exception_trace'] = $log_entry['variables']['exception_trace'];
   }
 
   if ($uuid = variable_get('loggly_http_uuid')) {
@@ -170,3 +171,4 @@ function loggly_http_watchdog(array $log_entry) {
 
   loggly_http_register_event($event);
 }
+

@@ -79,8 +79,10 @@ function _loggly_http_exception_handler($exception) {
 function _loggly_http_decode_exception($exception) {
   $return = _drupal_decode_exception($exception);
 
-  // We have to serialize the array here to prevent a notice.
-  $return['exception_trace'] = serialize($exception->getTrace());
+  // We have to serialize and encode the array here to prevent a notice in
+  // theme_dblog_message(). We will decode the string back in
+  // loggly_http_watchdog()
+  $return['exception_trace'] = drupal_base64_encode(serialize($exception->getTrace()));
   return $return;
 
 }
@@ -96,17 +98,15 @@ function loggly_http_shutdown() {
   }
 
   // Send events to loggly.
-  foreach ($events as $event) {
-    $loggly_endpoint = variable_get('loggly_http_url');
+  $loggly_endpoint = variable_get('loggly_http_url');
 
-    $options = array(
-      'method' => 'POST',
-      'data' => drupal_json_encode($event),
-    );
+  $options = array(
+    'method' => 'POST',
+    'data' => drupal_json_encode($events),
+  );
 
-    // Send data to Loggly.
-    $response = drupal_http_request($loggly_endpoint, $options);
-  }
+  // Send data to Loggly.
+  $response = drupal_http_request($loggly_endpoint, $options);
 }
 
 /**
@@ -127,6 +127,12 @@ function loggly_http_register_event(array $event = array()) {
   $events[$key] = $event;
 }
 
+/**
+ * Get the registered events from the static cache.
+ *
+ * @return array
+ *   Array of events.
+ */
 function loggly_http_get_registered_events() {
   $events = &drupal_static('loggly_http_events', array());
   return $events;
@@ -148,7 +154,7 @@ function loggly_http_permission() {
 /**
  * Implements hook_watchdog().
  *
- * HTTP POST JSON Object as a single event.
+ * Register watchdog events.
  */
 function loggly_http_watchdog(array $log_entry) {
   if (!variable_get('loggly_http_enabled', TRUE) || !variable_get('loggly_http_url')) {
@@ -176,7 +182,7 @@ function loggly_http_watchdog(array $log_entry) {
   if (!empty($log_entry['variables']['exception_trace'])) {
     // @todo: We avoid unserializing as it seems to causes Loggly to fail
     // to index event as JSON.
-    $event['exception_trace'] = $log_entry['variables']['exception_trace'];
+    $event['exception_trace'] = base64_decode($log_entry['variables']['exception_trace']);
   }
 
   if ($uuid = variable_get('loggly_http_uuid')) {

@@ -28,14 +28,10 @@ function loggly_http_shutdown() {
 
   // Send events to loggly.
   foreach ($events as $event) {
-    $loggly_endpoint = LOGGLY_HTTP_LOG . variable_get('loggly_http_token') . '/tag/http/';
+    $loggly_endpoint = variable_get('loggly_http_url');
 
     $options = array(
       'method' => 'POST',
-      'headers' => array(
-        'Accept' => 'text/plain',
-        'Content-Type' => 'application/x-www-form-urlencoded',
-      ),
       'data' => drupal_json_encode($event),
     );
 
@@ -66,7 +62,8 @@ function loggly_http_menu() {
     'description' => 'Administer Loggly Client settings.',
     'access arguments' => array('administer loggly http client'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('loggly_http_admin'),
+    'page arguments' => array('loggly_http_admin_settings'),
+    'file' => 'loggly_http.admin.inc',
   );
 
   return $items;
@@ -86,66 +83,18 @@ function loggly_http_permission() {
 }
 
 /**
- * Loggly HTTP POST API Configuration Form.
- */
-function loggly_http_admin($form, &$form_state) {
-  $form['loggly_http_token'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Loggly HTTP API Token'),
-    '#description' => t('TOKEN: your customer token from the source setup page'),
-    '#default_value' => variable_get('loggly_http_token', NULL),
-  );
-
-  $form['loggly_http_severity_level'] = array(
-    '#type' => 'select',
-    '#title' => t('Watchdog Severity'),
-    '#options' => loggly_http_severity_levels(),
-    '#default_value' => variable_get('loggly_http_severity_level', WATCHDOG_ERROR),
-    '#description' => t('The minimum severity level to be reached before an event is pushed to Loggly.'),
-  );
-
-  $form['loggly_http_enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Loggly HTTP API'),
-    '#description' => t('Enable Loggly HTTP POST'),
-    '#default_value' => variable_get('loggly_http_enabled'),
-  );
-
-  return system_settings_form($form);
-}
-
-/**
- * Returns an array of watchdog severity levels.
- *
- * @return array
- *   Array of Watchdog severity levels.
- */
-function loggly_http_severity_levels() {
-  return array(
-    WATCHDOG_EMERGENCY => t('Emergency'),
-    WATCHDOG_ALERT => t('Alert'),
-    WATCHDOG_CRITICAL => t('Critical'),
-    WATCHDOG_ERROR => t('Error'),
-    WATCHDOG_WARNING => t('Warning'),
-    WATCHDOG_NOTICE => t('Notice'),
-    WATCHDOG_INFO => t('Info'),
-    WATCHDOG_DEBUG => t('Debug'),
-  );
-}
-
-/**
  * Implements hook_watchdog().
  *
- * HTTP POST JSON Object as a single event to Loggly.
- *
- * These events can be searched in Loggly by "tag:http".
+ * HTTP POST JSON Object as a single event.
  */
 function loggly_http_watchdog(array $log_entry) {
-  if (!variable_get('loggly_http_enabled')) {
+  if (!variable_get('loggly_http_enabled') || !variable_get('loggly_http_url')) {
     return;
   }
 
+
   if ($log_entry['severity'] > variable_get('loggly_http_severity_level')) {
+    // Severity level is above the ones we want to log.
     return;
   }
 
@@ -161,8 +110,15 @@ function loggly_http_watchdog(array $log_entry) {
   );
 
     if ($log_entry['severity'] >= WATCHDOG_CRITICAL) {
+      // Capture the functions stack. We can't send the entire backtrace, as
+      // it might clog the memory.
+      $debug_backtrace = array();
+      foreach (debug_backtrace() as $debug) {
+        $debug_backtrace[] = $debug['function'];
+
+      }
       $event += array(
-        'debug_backtrace' => debug_backtrace(),
+        'debug_backtrace' => $debug_backtrace,
       );
     }
 

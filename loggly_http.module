@@ -98,15 +98,17 @@ function loggly_http_shutdown() {
   }
 
   // Send events to loggly.
-  $loggly_endpoint = variable_get('loggly_http_url');
+  foreach ($events as $event) {
+    $loggly_endpoint = variable_get('loggly_http_url');
 
-  $options = array(
-    'method' => 'POST',
-    'data' => drupal_json_encode($events),
-  );
+    $options = array(
+      'method' => 'POST',
+      'data' => drupal_json_encode($event),
+    );
 
-  // Send data to Loggly.
-  $response = drupal_http_request($loggly_endpoint, $options);
+    // Send data to Loggly.
+    $response = drupal_http_request($loggly_endpoint, $options);
+  }
 }
 
 /**

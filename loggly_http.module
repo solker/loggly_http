@@ -97,17 +97,17 @@ function loggly_http_shutdown() {
     return;
   }
 
+  $url = loggly_http_get_http_url();
+
   // Send events to loggly.
   foreach ($events as $event) {
-    $loggly_endpoint = variable_get('loggly_http_url');
-
     $options = array(
       'method' => 'POST',
       'data' => drupal_json_encode($event),
     );
 
     // Send data to Loggly.
-    $response = drupal_http_request($loggly_endpoint, $options);
+    $response = drupal_http_request($url, $options);
   }
 }
 
@@ -121,8 +121,7 @@ function loggly_http_shutdown() {
  *   The entry log as passed from hook_watchdog().
  */
 function loggly_http_register_event(array $log_entry) {
-  if (!variable_get('loggly_http_enabled', TRUE) || !variable_get('loggly_http_url')) {
-    // Don't register the event.
+  if (!loggly_http_get_http_url()) {
     return;
   }
 
@@ -196,6 +195,21 @@ function loggly_http_watchdog(array $log_entry) {
   }
 
   loggly_http_register_event($log_entry);
+}
+
+/**
+ * Return the endpoint URL to POST data to.
+ *
+ * @return string
+ *   Return the URL if exists, or NULL if disabled.
+ */
+function loggly_http_get_http_url() {
+  if (!variable_get('loggly_http_enabled', TRUE) || !variable_get('loggly_http_url')) {
+    // Don't register the event.
+    return;
+  }
+
+  return variable_get('loggly_http_url');
 }
 
 /**

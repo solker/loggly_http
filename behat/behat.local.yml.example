@@ -1,4 +1,7 @@
 default:
   extensions:
     Behat\MinkExtension:
-      base_url: "http://gizra.com"
+      base_url: "https://app.shoov.io"
+      selenium2:
+        wd_host: 'http://silenium:4470/wd/hub'
+        browser: chrome
